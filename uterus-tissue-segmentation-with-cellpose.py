@@ -123,50 +123,6 @@ def compute_label_intensities(mask, image, output_path, filename, expand=10):
     return coloured_regions
 
 
-def compute_voronoi_from_mask(mask, image):
-    """
-    Compute Voronoi tessellation from the mask and calculate the intensity of each Voronoi region based on the image.
-    """
-    props = regionprops(mask)
-    centroids = np.array([prop.centroid for prop in props])[:, [1, 0]]  # Convert to (x, y)
-    tree = cKDTree(centroids)
-
-    voronoi_regions = np.zeros(image.shape, dtype=int)
-    for y in range(image.shape[0]):
-        for x in range(image.shape[1]):
-            _, region = tree.query([x, y])
-            voronoi_regions[y, x] = region
-
-    return voronoi_regions
-
-
-def plot_voronoi_with_intensities(image, voronoi_regions, region_intensities, output_path):
-    """
-    Plot Voronoi regions on the image, colored by the average intensity of each region.
-    """
-    colormap = plt.cm.viridis
-    norm = plt.Normalize(vmin=min(region_intensities), vmax=max(region_intensities))
-
-    colored_regions = np.zeros((image.shape[0], image.shape[1], 3))  # RGB image
-    for region, intensity in enumerate(region_intensities, start=1):
-        region_mask = (voronoi_regions == region)
-        color = colormap(norm(intensity))[:3]
-        colored_regions[region_mask] = color
-
-    fig, ax = plt.subplots(figsize=(10, 10))
-    ax.imshow(image, cmap='gray', interpolation='nearest', alpha=0.6)
-    im = ax.imshow(colored_regions, interpolation='nearest', alpha=0.5)
-
-    # Add colorbar for the label mask
-    cbar = plt.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-    cbar.set_label('Label Intensity')  # Optional label for the colorbar
-
-    #plt.show()
-    output_file = os.path.join(output_path, 'voronoi_intensities.png')
-    plt.savefig(output_file, bbox_inches='tight', dpi=300)
-    plt.close()  # Close the plot to avoid memory leaks
-
-
 def max_project_z(image_stack):
     """
     Max projection of a 3D image stack along the z-axis.
@@ -264,6 +220,6 @@ def process_images(input_folder, output_folder, diameter=50):
 # process_images(input_folder, output_folder, diameter=50)
 
 # Uterus
-input_folder = '/home/laura/WMS_Files/ProjectSupport/NM_MacrophageSegmentation/Uterus m3 w4 170424'
+input_folder = '/home/laura/WMS_Files/ProjectSupport/NM_MacrophageSegmentation/Uterus m3 w4 170424/Uterus m3 w4 170424'
 output_folder = '/home/laura/Desktop/output/uterus'
 process_images(input_folder, output_folder, diameter=75)

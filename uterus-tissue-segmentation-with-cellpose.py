@@ -164,9 +164,11 @@ def process_images(input_folder, output_folder, diameter=50):
 
     for filename in os.listdir(input_folder):
         if filename.endswith('.oir'):
+            #uncomment to use tif
         #if filename.endswith('.tif'):
             filepath = os.path.join(input_folder, filename)
 
+            # comment to use tif
             # Use Bio-Formats to read the image
             with bioformats.ImageReader(filepath) as reader:
                 z_size, c_size, t_size = reader.rdr.getSizeZ(), reader.rdr.getSizeC(), reader.rdr.getSizeT()
@@ -177,13 +179,14 @@ def process_images(input_folder, output_folder, diameter=50):
                     for z in range(z_size):
                         for c in range(c_size):
                             image_data[z, c, t] = reader.read(c=c, z=z, t=t, series=None, rescale=False)
+            #uncomment to use tif
             #image_data = imread(os.path.join(input_folder, filename))
 
             # Max projection of channels
             channel_1 = np.squeeze(max_project_z(image_data[:, 0, :, :]))  # Channel 1 (Green)
-            channel_3 = np.squeeze(max_project_z(image_data[:, 1, :, :]))  # Channel 3 (Magenta)
+            channel_3 = np.squeeze(max_project_z(image_data[:, 2, :, :]))  # Channel 3 (Magenta)
 
-            # Run Cellpose on the max projected image
+            # Run Cellpose on the max projected image check diameter
             masks, _, _, _ = model.eval(channel_1, diameter=50, channels=[2, 1])
             
             output_path = os.path.join(output_folder, filename)

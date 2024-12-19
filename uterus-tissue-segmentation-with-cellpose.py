@@ -11,6 +11,7 @@ import javabridge
 import bioformats
 import matplotlib.colors as mcolors
 from PIL import Image, ImageDraw, ImageFont
+import sys
 
 def combine_images_with_text(image1_path, image2_path, text1, text2, output_path):
     """
@@ -107,7 +108,7 @@ def compute_label_intensities(mask, image, output_path, filename, expand=10):
     fig, ax = plt.subplots(figsize=(10, 10))
     norm = plt.Normalize(vmin=np.min(image), vmax=np.max(image))
     ax.imshow(image, cmap='gray', interpolation='nearest', alpha=0.6, norm=norm)
-    norm = plt.Normalize(vmin=np.min(coloured_regions), vmax=np.max(coloured_regions))
+    norm = plt.Normalize(vmin=np.min(coloured_regions[coloured_regions > 0]), vmax=np.max(coloured_regions))
     im = ax.imshow(coloured_regions, interpolation='nearest', alpha=0.5,cmap=cmap_new, norm=norm)
 
     ax.axis('off')
@@ -162,42 +163,39 @@ def process_images(input_folder, output_folder, diameter=50):
     if not os.path.exists(output_folder):
         os.makedirs(output_folder)
 
-    for filename in os.listdir(input_folder):
-        if filename.endswith('.oir'):
-            #uncomment to use tif
-        #if filename.endswith('.tif'):
-            filepath = os.path.join(input_folder, filename)
+    for root, dirs, files in os.walk(input_folder):
+        for filename in files:
+            print(filename)
+            if filename.endswith('.oir'):
+                filepath = os.path.join(root, filename)
 
-            # comment to use tif
-            # Use Bio-Formats to read the image
-            with bioformats.ImageReader(filepath) as reader:
-                z_size, c_size, t_size = reader.rdr.getSizeZ(), reader.rdr.getSizeC(), reader.rdr.getSizeT()
-                x_size, y_size = reader.rdr.getSizeX(), reader.rdr.getSizeY()
+                # Use Bio-Formats to read the image
+                with bioformats.ImageReader(filepath) as reader:
+                    z_size, c_size, t_size = reader.rdr.getSizeZ(), reader.rdr.getSizeC(), reader.rdr.getSizeT()
+                    x_size, y_size = reader.rdr.getSizeX(), reader.rdr.getSizeY()
 
-                image_data = np.zeros((z_size, c_size, t_size, x_size, y_size), dtype=np.uint16)
-                for t in range(t_size):
-                    for z in range(z_size):
-                        for c in range(c_size):
-                            image_data[z, c, t] = reader.read(c=c, z=z, t=t, series=None, rescale=False)
-            #uncomment to use tif
-            #image_data = imread(os.path.join(input_folder, filename))
+                    image_data = np.zeros((z_size, c_size, t_size, x_size, y_size), dtype=np.uint16)
+                    for t in range(t_size):
+                        for z in range(z_size):
+                            for c in range(c_size):
+                                image_data[z, c, t] = reader.read(c=c, z=z, t=t, series=None, rescale=False)
+            #elif filename.endswith('.tif'):
+            #    image_data = imread(os.path.join(root, filename))
+            else:
+                continue
 
             # Max projection of channels
             channel_1 = np.squeeze(max_project_z(image_data[:, 0, :, :]))  # Channel 1 (Green)
             channel_3 = np.squeeze(max_project_z(image_data[:, 2, :, :]))  # Channel 3 (Magenta)
 
-            # Run Cellpose on the max projected image check diameter
-            masks, _, _, _ = model.eval(channel_1, diameter=50, channels=[2, 1])
+            # Run Cellpose on the max projected image
+            masks, _, _, _ = model.eval(channel_1, diameter=diameter)
             
             output_path = os.path.join(output_folder, filename)
             if not os.path.exists(output_path):
                 os.makedirs(output_path)
 
             plot_image_with_mask(channel_1, masks, colormap='prism', alpha=0.4, maxint=np.max(channel_1), minint=np.min(channel_1),output_path=output_path)
-
-            # Compute Voronoi tessellation from the mask and plot it
-            #voronoi_regions = compute_voronoi_from_mask(masks, channel_3)
-            #voronoi_intensity_labels=compute_label_intensities(voronoi_regions, channel_3, output_path, 'voronoi_intensities.png',expand=0)
 
             # Compute region intensities from the mask and plot the labeled regions
             expanded_intensity_labels=compute_label_intensities(masks, channel_3, output_path, 'expanded_intensities.png', expand=10)
@@ -217,12 +215,12 @@ def process_images(input_folder, output_folder, diameter=50):
     javabridge.kill_vm()
 
 
-# # Lesion
-# input_folder = '/home/laura/WMS_Files/ProjectSupport/NM_MacrophageSegmentation/Lesion m4.2 ft 200224 '
-# output_folder = '/home/laura/Desktop/output/lesion'
-# process_images(input_folder, output_folder, diameter=50)
+# Lesion
+input_folder = '/home/laura/WMS_Files/ProjectSupport/NM_MacrophageSegmentation/Lesion m4.2 ft 200224 '
+output_folder = '/home/laura/Desktop/output/lesion'
+process_images(input_folder, output_folder, diameter=50)
 
-# Uterus
-input_folder = '/home/laura/WMS_Files/ProjectSupport/NM_MacrophageSegmentation/Uterus m3 w4 170424/Uterus m3 w4 170424'
-output_folder = '/home/laura/Desktop/output/uterus'
-process_images(input_folder, output_folder, diameter=75)
+# # Uterus
+# input_folder = '/home/laura/WMS_Files/ProjectSupport/NM_MacrophageSegmentation/Uterus m3 w4 170424/Uterus m3 w4 170424'
+# output_folder = '/home/laura/Desktop/output/uterus'
+# process_images(input_folder, output_folder, diameter=50)

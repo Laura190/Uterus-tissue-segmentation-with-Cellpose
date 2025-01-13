@@ -1,6 +1,6 @@
 # Uterus-tissue-segmentation-with-Cellpose
 
-Decemmber 2024, Laura Cooper, CAMDU@warwick.ac.uk
+December 2024, Laura Cooper, CAMDU@warwick.ac.uk
 
 Automatically detect and count nuclei (channel 1) and identify those that are macrophages based on membrane stain (channel 3).
 

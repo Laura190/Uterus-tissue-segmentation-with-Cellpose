@@ -8,7 +8,7 @@ Automatically detect and count nuclei (channel 1) and identify those that are ma
 
 Create a vitual environment and install
 
-python-bioformats
-matplotlib
-cellpose (optional: with gui)
-scikit-image
+python-bioformats \
+matplotlib \
+cellpose (optional: with gui) \
+scikit-image \

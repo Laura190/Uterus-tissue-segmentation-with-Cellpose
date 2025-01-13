@@ -11,4 +11,4 @@ Create a vitual environment and install
 python-bioformats \
 matplotlib \
 cellpose (optional: with gui) \
-scikit-image \
+scikit-image
